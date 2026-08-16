@@ -20,7 +20,7 @@
 - [x] Default styling is neutral and boost styling uses only pale mint/yellow.
 - [x] The page still exposes source post, view count, modulo, freshness, and
   deletion status without protocol-themed chrome.
-- [ ] The static UI is published at `https://sudkorea.github.io/volume/`.
-- [ ] GitHub Pages loads assets correctly from the `/volume/` project path.
+- [x] The static UI is published at `https://sudkorea.github.io/volume/`.
+- [x] GitHub Pages loads assets correctly from the `/volume/` project path.
 - [ ] The Pages origin can fetch state and receive SSE from the Funnel origin.
 - [x] Other browser origins do not receive CORS permission from the API.

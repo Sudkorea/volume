@@ -64,3 +64,9 @@
   checks, and the 86-to-87 mock volume smoke flow.
 - Reinstalled the remote launchd service and verified that only
   `https://sudkorea.github.io` receives `Access-Control-Allow-Origin`.
+- Created the public `Sudkorea/volume` repository, enabled GitHub Pages with the
+  Actions workflow, and published `https://sudkorea.github.io/volume/`.
+- Verified the published HTML, `app.js`, and `styles.css` all return HTTP 200
+  from the `/volume/` project path and contain the expected Funnel API base.
+- End-to-end live state remains pending only on the account-level Tailscale
+  Funnel approval currently open in the browser.
