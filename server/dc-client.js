@@ -17,6 +17,82 @@ function parseRetryAfter(header) {
   return Number.isNaN(date) ? null : Math.max(0, date - Date.now());
 }
 
+function assertExpectedResponse(response) {
+  const contentType = response.headers.get("content-type")?.toLowerCase() ?? "";
+  if (!contentType.startsWith("text/html") && !contentType.startsWith("application/xhtml+xml")) {
+    throw new UpstreamError(`DCInside returned unexpected content type: ${contentType || "missing"}`);
+  }
+
+  let finalUrl;
+  try {
+    finalUrl = new URL(response.url);
+  } catch {
+    throw new UpstreamError("DCInside response URL was missing or invalid");
+  }
+  if (finalUrl.protocol !== "https:" || finalUrl.hostname !== "gall.dcinside.com") {
+    throw new UpstreamError("DCInside response came from an unexpected host");
+  }
+}
+
+async function readLimitedText(response, maxBytes) {
+  const declaredLength = Number.parseInt(response.headers.get("content-length") ?? "", 10);
+  if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+    throw new UpstreamError(`DCInside response exceeded ${maxBytes} bytes`);
+  }
+  if (!response.body) throw new UpstreamError("DCInside returned an empty response body");
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let bytesRead = 0;
+  let text = "";
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytesRead += value.byteLength;
+      if (bytesRead > maxBytes) {
+        await reader.cancel("response too large");
+        throw new UpstreamError(`DCInside response exceeded ${maxBytes} bytes`);
+      }
+      text += decoder.decode(value, { stream: true });
+    }
+    text += decoder.decode();
+    return text;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+function parseAndValidateList(html, page) {
+  const rows = parseGalleryList(html, page);
+  // User-controlled gallery titles can contain words such as "captcha" or
+  // "cloudflare". Valid list rows take precedence over textual challenge
+  // heuristics so another poster cannot force the tracker into degraded mode.
+  if (rows.size > 0) return rows;
+
+  const normalized = html.toLowerCase();
+  const challengeMarkers = [
+    "captcha",
+    "cf-chl-",
+    "cloudflare",
+    "비정상적인 접근",
+    "자동입력 방지",
+    "접근이 제한",
+    "서비스 이용 제한",
+  ];
+  const challenge = challengeMarkers.some((marker) => normalized.includes(marker));
+  if (challenge) {
+    throw new UpstreamError("DCInside returned a challenge or access-denied page");
+  }
+
+  const hasListShell = /<table\b[^>]*class=["'][^"']*\bgall_list\b/i.test(html)
+    && /<tbody\b[^>]*class=["'][^"']*\blistwrap2\b/i.test(html);
+  if (hasListShell) return rows;
+  throw new UpstreamError(
+    "DCInside list HTML contained no valid post rows or list structure",
+  );
+}
+
 export class DcListClient {
   constructor({ fetchImpl = globalThis.fetch } = {}) {
     this.fetchImpl = fetchImpl;
@@ -35,7 +111,7 @@ export class DcListClient {
           "Accept-Language": "ko-KR,ko;q=0.9",
           "User-Agent": "VolumeOracleContest/1.0 (+public gallery view counter)",
         },
-        redirect: "follow",
+        redirect: "error",
         signal: AbortSignal.timeout(config.polling.requestTimeoutMs),
       });
     } catch (error) {
@@ -48,6 +124,8 @@ export class DcListClient {
         retryAfterMs: parseRetryAfter(response.headers.get("retry-after")),
       });
     }
-    return parseGalleryList(await response.text(), page);
+    assertExpectedResponse(response);
+    const html = await readLimitedText(response, config.polling.maxResponseBytes);
+    return parseAndValidateList(html, page);
   }
 }

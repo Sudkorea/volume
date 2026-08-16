@@ -11,10 +11,20 @@ export function makeConfig(overrides = {}) {
       activeMs: 2000,
       burstMs: 1000,
       burstWindowMs: 10000,
+      burstMaxDurationMs: 20000,
+      burstCooldownMs: 30000,
       idleMs: 30000,
+      degradedMs: 10000,
+      minIntervalMs: 1000,
       requestTimeoutMs: 4500,
+      maxResponseBytes: 1500000,
       maxBackoffMs: 60000,
       deletionConfirmations: 3,
+      staleAfterMs: 120000,
+      alertRetryMs: 300000,
+      stateCheckpointMs: 300000,
+      recoveryPageRadius: 5,
+      recoveryScanCooldownMs: 60000,
     },
     ...overrides,
   };
@@ -53,6 +63,11 @@ export class RecordingNotifier {
   }
 
   async notifyDeletion(event) {
+    this.events.push(event);
+    return { delivered: true };
+  }
+
+  async notifyOperationalIssue(event) {
     this.events.push(event);
     return { delivered: true };
   }

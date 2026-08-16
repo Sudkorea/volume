@@ -24,3 +24,16 @@
 - [x] GitHub Pages loads assets correctly from the `/volume/` project path.
 - [ ] The Pages origin can fetch state and receive SSE from the Funnel origin.
 - [x] Other browser origins do not receive CORS permission from the API.
+- [ ] Tailscale is upgraded to a release fixed for TS-2026-008 before Funnel is
+  enabled.
+- [x] HTTP/SSE connection limits, backpressure, polling throttles, and malformed
+  request handling pass automated tests.
+- [x] DC response size, host, content type, parser sanity, guard loss, and stale
+  health behavior pass automated tests.
+- [x] Remote launchd runs the hardened service with bounded logs, Node heap,
+  file descriptors, and no inherited SSH agent socket.
+- [ ] GitHub Pages deploys only after verification with immutable Action pins.
+- [x] Dependabot alerts and automated security updates are enabled.
+- [ ] Existing public commit metadata uses `butterserverrobot@gmail.com`.
+- [ ] A PROXY-aware local edge or external WAF enforces per-source limits before
+  high-traffic public exposure.

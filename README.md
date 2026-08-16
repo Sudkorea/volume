@@ -24,13 +24,14 @@ Node.js server ─── Discord deletion webhook
 ```
 
 사용자 수가 늘어도 DCInside 요청 수는 늘지 않습니다. 브라우저 탭이 보이는
-동안에는 기본 2초, 조회수 변화 직후에는 1초, 접속자가 없을 때에는 30초
-주기로 동작합니다. 상류 서버 오류가 발생하면 최대 60초까지 자동으로
-백오프합니다.
+동안에는 기본 2초, 조회수 변화 직후에는 제한된 시간 동안 1초, 접속자가
+없을 때에는 30초 주기로 동작합니다. 1초 가속은 최대 20초 뒤 종료되고
+30초 cooldown을 거치며, 어떤 요청도 전역 최소 간격보다 앞당겨지지 않습니다.
+상류 서버 오류가 발생하면 최대 60초까지 자동으로 백오프합니다.
 
 ## 로컬 실행
 
-Node.js 22.13 이상이 필요합니다.
+보안 수정이 포함된 Node.js 22.23 이상이 필요합니다.
 
 ```sh
 npm ci
@@ -53,7 +54,7 @@ npm start
 
 ```dotenv
 DISCORD_WEBHOOK_URL=https://discord.com/api/webhooks/REPLACE_ME
-DISCORD_MENTION=
+DISCORD_MENTION=<@DISCORD_USER_ID>
 PUBLIC_BASE_URL=https://your-public-url.example
 ```
 
@@ -67,6 +68,11 @@ npm run test:discord
 사라졌을 때 삭제로 확정합니다. 마지막 정상 조회수와 볼륨을 유지하며 같은
 게시글에 대한 알림은 한 번만 전송합니다. 알림 여부와 마지막 값은
 `runtime/oracle-state.json`에 원자적으로 저장됩니다.
+
+센티널 자체가 연속 3회 보이지 않아도 별도 Discord 운영 알림을 보냅니다.
+사용자나 역할 푸시를 원하면 `DISCORD_MENTION`에 정확한 `<@사용자ID>` 또는
+`<@&역할ID>` 형식을 사용합니다. `@everyone`과 임의 멘션 파싱은 허용하지
+않습니다.
 
 ## 삭제된 글을 수동으로 교체하기
 
@@ -107,7 +113,10 @@ zsh scripts/install-snb-service.sh /Users/snb/Services/volume-oracle
 
 설치 스크립트는 `launchd` 사용자 서비스를 등록하고 `127.0.0.1:3000`의
 상태 API까지 확인합니다. 서비스는 외부 네트워크 인터페이스에 직접 바인딩하지
-않습니다.
+않습니다. Node heap을 256MB로 제한하고 연결 상한보다 넉넉한 파일
+디스크립터 여유를 남깁니다. SSH agent 소켓은 서비스 환경에서 제거하며,
+로그는 권한 `0600`과 최대 5MB 두 세대로 유지합니다. 설치 직후 상태 확인은
+프로세스 시작 지연을 고려해 제한된 횟수만 재시도합니다.
 
 공개 HTTPS 주소가 필요할 때에만 Tailscale Funnel을 별도로 승인하고 다음과
 같이 로컬 서버를 공개합니다.
@@ -117,7 +126,8 @@ zsh scripts/install-snb-service.sh /Users/snb/Services/volume-oracle
 ```
 
 Funnel 활성화는 서비스를 인터넷에 공개하는 별도 운영 단계입니다. SSH 포트나
-다른 로컬 서비스는 공개하지 않습니다.
+다른 로컬 서비스는 공개하지 않습니다. TS-2026-008이 수정되지 않은 Tailscale
+1.98.9 미만에서는 Funnel을 활성화하지 않습니다.
 
 ## 공개 웹사이트
 
@@ -127,9 +137,11 @@ Funnel 활성화는 서비스를 인터넷에 공개하는 별도 운영 단계�
 https://sudkorea.github.io/volume/
 ```
 
-`main` 브랜치에 푸시하면 `.github/workflows/pages.yml`이 `public/` 폴더를
-배포합니다. 페이지는 상대 경로로 CSS와 JavaScript를 불러오며, 브라우저에서
-실행될 때 다음 Funnel API로 연결합니다.
+`main` 브랜치에 푸시하면 `.github/workflows/pages.yml`이 전체 테스트·빌드·
+스모크 검증을 통과한 뒤에만 `public/` 폴더를 배포합니다. GitHub Actions는
+변경 가능한 태그 대신 검증된 commit SHA로 고정합니다. 페이지는 상대 경로로
+CSS와 JavaScript를 불러오며, 브라우저에서 실행될 때 다음 Funnel API로
+연결합니다.
 
 ```text
 https://snb-macbook-pro.tail643f01.ts.net
@@ -137,7 +149,15 @@ https://snb-macbook-pro.tail643f01.ts.net
 
 백엔드는 `https://sudkorea.github.io` Origin에만 API와 SSE용 CORS 헤더를
 반환합니다. Discord 웹훅과 런타임 상태는 GitHub Pages로 전송하거나 저장소에
-커밋하지 않습니다.
+커밋하지 않습니다. CORS는 브라우저 읽기 정책일 뿐 인증이나 DDoS 방어가
+아니므로, 서버는 별도의 전역 요청·SSE 연결·버퍼 상한을 적용합니다.
+
+기본 HTTP Funnel 프록시는 백엔드가 검증할 수 있는 원본 IP를 제공하지 않으므로
+임의의 `X-Forwarded-For`는 신뢰하지 않습니다. 현재 상한은 Mac의 메모리와 파일
+디스크립터를 보호하지만, 한 공격자가 SSE 200개를 선점하는 서비스 거부까지
+막지는 못합니다. 높은 가용성이 필요하면 공개 전에 Tailscale의
+[PROXY protocol](https://tailscale.com/docs/reference/tailscale-cli/funnel#use-the-proxy-protocol)을
+해석하는 로컬 프록시 또는 별도 edge/WAF를 두고 per-IP 제한을 적용해야 합니다.
 
 ## 경계
 
@@ -145,3 +165,8 @@ https://snb-macbook-pro.tail643f01.ts.net
 - 타깃 상세 페이지를 폴링하지 않습니다.
 - 공개 목록 메타데이터만 읽습니다.
 - 디시 HTML 파싱이 연속 실패하면 마지막 음량을 유지하고 요청 간격을 늦춥니다.
+- 응답 호스트·타입·크기·목록 구조를 검증하고 차단 HTML은 정상 데이터로
+  처리하지 않습니다.
+- 전체 게시글 블록이 여러 페이지 이동한 경우에는 cooldown이 있는 제한된
+  복구 탐색만 수행합니다. 한 번에 최대 5개 새 페이지만 확인하되, 다음
+  cooldown에는 이전 범위 다음부터 이어서 찾습니다.

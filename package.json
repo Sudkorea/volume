@@ -5,7 +5,7 @@
   "description": "DCInside view-count driven shared browser volume controller",
   "type": "module",
   "engines": {
-    "node": ">=22.13.0"
+    "node": ">=22.23.0"
   },
   "scripts": {
     "dev": "ORACLE_MOCK=1 node --env-file-if-exists=.env --watch server/main.js",
@@ -17,6 +17,6 @@
     "verify": "npm test && npm run build && npm run smoke"
   },
   "dependencies": {
-    "cheerio": "1.0.0"
+    "cheerio": "1.2.0"
   }
 }

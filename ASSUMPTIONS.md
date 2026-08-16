@@ -22,3 +22,15 @@
 - The source repository may be public; `.env`, runtime state, and webhook
   credentials remain excluded from version control.
 - Only `https://sudkorea.github.io` needs browser CORS access to the backend.
+- Funnel does not provide a documented trustworthy per-client IP header for
+  this HTTP proxy configuration, so global connection and request ceilings are
+  required even if a future IP-based limiter is added.
+- Tailscale offers original-IP forwarding through PROXY protocol only in its
+  TCP-forwarding mode. This deployment does not yet include a PROXY-aware local
+  edge, so global limits protect host resources but cannot prevent one source
+  from occupying all public SSE slots.
+- Funnel remains disabled until Tailscale is upgraded past TS-2026-008 and the
+  hardened service passes remote verification.
+- The requested replacement Git email is `butterserverrobot@gmail.com`; the
+  two existing public commits require an explicitly approved history rewrite
+  and force-push before the old address disappears from GitHub.

@@ -34,6 +34,10 @@ const configuredApiBase = document
   ?.content.trim()
   .replace(/\/+$/, "");
 const usePublicApi = window.location.hostname.endsWith(".github.io");
+const FETCH_TIMEOUT_MS = 5000;
+const RETRY_BASE_MS = 1000;
+const RETRY_MAX_MS = 30_000;
+const FALLBACK_SUCCESS_MS = 3000;
 
 function apiUrl(pathname) {
   return usePublicApi && configuredApiBase ? `${configuredApiBase}${pathname}` : pathname;
@@ -143,6 +147,11 @@ const audio = new AudioEngine();
 let selectedMode = "boost";
 let eventSource = null;
 let fallbackTimer = null;
+let eventRetryTimer = null;
+let fallbackAbortController = null;
+let eventRetryAttempt = 0;
+let fallbackRetryAttempt = 0;
+let fallbackGeneration = 0;
 let latestSnapshot = null;
 let lastRenderedVolume = null;
 let started = false;
@@ -229,40 +238,118 @@ function applySnapshot(snapshot) {
   lastRenderedVolume = mode.volume;
 }
 
-async function fetchState() {
-  const response = await fetch(apiUrl("/api/state"), { cache: "no-store" });
-  if (!response.ok) throw new Error(`HTTP ${response.status}`);
-  applySnapshot(await response.json());
+function retryDelay(attempt, baseMs = RETRY_BASE_MS, maximumMs = RETRY_MAX_MS) {
+  const exponent = Math.min(Math.max(0, attempt), 8);
+  const ceiling = Math.min(maximumMs, baseMs * (2 ** exponent));
+  const jitter = 0.75 + (Math.random() * 0.5);
+  return Math.max(250, Math.round(ceiling * jitter));
 }
 
-function startFallback() {
-  if (fallbackTimer) return;
-  fallbackTimer = window.setInterval(() => fetchState().catch(() => {}), 2500);
+async function fetchState({ timeoutMs = FETCH_TIMEOUT_MS } = {}) {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    const response = await fetch(apiUrl("/api/state"), {
+      cache: "no-store",
+      signal: controller.signal,
+    });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    applySnapshot(await response.json());
+  } finally {
+    window.clearTimeout(timeout);
+  }
 }
 
 function stopFallback() {
-  if (fallbackTimer) window.clearInterval(fallbackTimer);
+  fallbackGeneration += 1;
+  if (fallbackTimer) window.clearTimeout(fallbackTimer);
   fallbackTimer = null;
+  fallbackAbortController?.abort();
+  fallbackAbortController = null;
+  fallbackRetryAttempt = 0;
+}
+
+function scheduleFallback(delay = retryDelay(fallbackRetryAttempt)) {
+  if (!started || fallbackTimer) return;
+  const generation = fallbackGeneration;
+  fallbackTimer = window.setTimeout(async () => {
+    fallbackTimer = null;
+    const controller = new AbortController();
+    fallbackAbortController = controller;
+    const timeout = window.setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    try {
+      const response = await fetch(apiUrl("/api/state"), {
+        cache: "no-store",
+        signal: controller.signal,
+      });
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+      const snapshot = await response.json();
+      if (generation !== fallbackGeneration) return;
+      applySnapshot(snapshot);
+      fallbackRetryAttempt = 0;
+      scheduleFallback(retryDelay(0, FALLBACK_SUCCESS_MS, FALLBACK_SUCCESS_MS));
+    } catch {
+      if (generation !== fallbackGeneration) return;
+      fallbackRetryAttempt += 1;
+      scheduleFallback(retryDelay(fallbackRetryAttempt));
+    } finally {
+      window.clearTimeout(timeout);
+      if (fallbackAbortController === controller) fallbackAbortController = null;
+    }
+  }, delay);
+}
+
+function stopEventRetry() {
+  if (eventRetryTimer) window.clearTimeout(eventRetryTimer);
+  eventRetryTimer = null;
+}
+
+function scheduleEventReconnect() {
+  if (!started || eventSource || eventRetryTimer) return;
+  const delay = retryDelay(eventRetryAttempt);
+  eventRetryAttempt += 1;
+  eventRetryTimer = window.setTimeout(() => {
+    eventRetryTimer = null;
+    connectEvents();
+  }, delay);
 }
 
 function connectEvents() {
-  if (!started || document.hidden || eventSource) return;
+  if (!started || eventSource) return;
+  stopEventRetry();
   setConnection("", "연결 중");
-  eventSource = new EventSource(apiUrl("/api/events"));
-  eventSource.addEventListener("oracle", (event) => {
-    stopFallback();
-    applySnapshot(JSON.parse(event.data));
+  const source = new EventSource(apiUrl("/api/events"));
+  eventSource = source;
+  source.addEventListener("oracle", (event) => {
+    if (eventSource !== source) return;
+    try {
+      applySnapshot(JSON.parse(event.data));
+      eventRetryAttempt = 0;
+      stopFallback();
+    } catch {
+      source.close();
+      eventSource = null;
+      setConnection("degraded", "다시 연결 중");
+      scheduleFallback();
+      scheduleEventReconnect();
+    }
   });
-  eventSource.onerror = () => {
+  source.onerror = () => {
+    if (eventSource !== source) return;
+    source.close();
+    eventSource = null;
     setConnection("degraded", "다시 연결 중");
-    startFallback();
+    scheduleFallback();
+    scheduleEventReconnect();
   };
 }
 
 function disconnectEvents() {
   eventSource?.close();
   eventSource = null;
+  stopEventRetry();
   stopFallback();
+  eventRetryAttempt = 0;
 }
 
 elements.delegateButton.addEventListener("click", async () => {
@@ -294,9 +381,12 @@ elements.audioFile.addEventListener("change", () => {
 });
 
 document.addEventListener("visibilitychange", () => {
-  if (!started) return;
-  if (document.hidden) disconnectEvents();
-  else connectEvents();
+  if (!started || document.hidden) return;
+  fetchState().catch(() => {
+    scheduleFallback();
+    scheduleEventReconnect();
+  });
+  if (!eventSource && !eventRetryTimer) scheduleEventReconnect();
 });
 
 window.setInterval(() => {

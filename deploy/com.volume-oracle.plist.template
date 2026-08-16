@@ -7,6 +7,7 @@
     <key>ProgramArguments</key>
     <array>
       <string>/Users/snb/.local/bin/node</string>
+      <string>--max-old-space-size=256</string>
       <string>--env-file-if-exists=__APP_DIR__/.env</string>
       <string>__APP_DIR__/server/main.js</string>
     </array>
@@ -18,8 +19,30 @@
       <string>127.0.0.1</string>
       <key>PORT</key>
       <string>3000</string>
+      <key>NODE_ENV</key>
+      <string>production</string>
+      <key>ORACLE_MOCK</key>
+      <string>0</string>
       <key>ALLOWED_ORIGINS</key>
       <string>https://sudkorea.github.io</string>
+      <key>ORACLE_LOG_PATH</key>
+      <string>__APP_DIR__/runtime/service.log</string>
+      <key>SSH_AUTH_SOCK</key>
+      <string></string>
+    </dict>
+    <key>Umask</key>
+    <integer>63</integer>
+    <key>ProcessType</key>
+    <string>Background</string>
+    <key>SoftResourceLimits</key>
+    <dict>
+      <key>NumberOfFiles</key>
+      <integer>1024</integer>
+    </dict>
+    <key>HardResourceLimits</key>
+    <dict>
+      <key>NumberOfFiles</key>
+      <integer>2048</integer>
     </dict>
     <key>RunAtLoad</key>
     <true/>
@@ -27,9 +50,5 @@
     <true/>
     <key>ThrottleInterval</key>
     <integer>10</integer>
-    <key>StandardOutPath</key>
-    <string>__APP_DIR__/runtime/service.log</string>
-    <key>StandardErrorPath</key>
-    <string>__APP_DIR__/runtime/service.error.log</string>
   </dict>
 </plist>

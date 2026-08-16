@@ -51,3 +51,20 @@ confirmed missing.
    `https://snb-macbook-pro.tail643f01.ts.net` with Tailscale Funnel.
 4. Allow cross-origin API and SSE access only from the GitHub Pages origin.
 5. Verify the published page receives live state and SSE from the Mac service.
+
+## Security hardening — 2026-08-16
+
+1. Keep Funnel disabled until the vulnerable Tailscale 1.96.5 client is
+   replaced with a fixed stable release.
+2. Bound HTTP and SSE resources, handle slow clients, and ensure browser
+   reconnects cannot accelerate the shared DCInside poller.
+3. Validate upstream host, content type, response size, and parsed list shape;
+   surface missing guards and stale data as degraded health.
+4. Bound local logs and runtime state, remove inherited SSH-agent access, and
+   run the service with explicit memory and file-descriptor limits.
+5. Add browser retry backoff, fetch timeouts, a Pages CSP, complete tracked-file
+   secret scanning, immutable Actions pins, and a mandatory CI verification
+   gate before deployment.
+6. Update the supported Node runtime, dependency lock, GitHub security
+   settings, and repository commit email; verify locally and remotely before
+   requesting Funnel approval.

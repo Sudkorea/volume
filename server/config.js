@@ -36,12 +36,31 @@ export function validateConfig(config) {
     "activeMs",
     "burstMs",
     "burstWindowMs",
+    "burstMaxDurationMs",
+    "burstCooldownMs",
     "idleMs",
+    "degradedMs",
+    "minIntervalMs",
     "requestTimeoutMs",
+    "maxResponseBytes",
     "maxBackoffMs",
     "deletionConfirmations",
+    "staleAfterMs",
+    "alertRetryMs",
+    "stateCheckpointMs",
+    "recoveryPageRadius",
+    "recoveryScanCooldownMs",
   ]) {
     positiveInteger(config.polling?.[field], `polling.${field}`);
+  }
+  if (config.polling.burstMs < config.polling.minIntervalMs) {
+    throw new Error("polling.burstMs must be at least polling.minIntervalMs");
+  }
+  if (config.polling.activeMs < config.polling.minIntervalMs) {
+    throw new Error("polling.activeMs must be at least polling.minIntervalMs");
+  }
+  if (config.polling.burstMaxDurationMs < config.polling.burstWindowMs) {
+    throw new Error("polling.burstMaxDurationMs must cover polling.burstWindowMs");
   }
   return config;
 }

@@ -70,3 +70,40 @@
   from the `/volume/` project path and contain the expected Funnel API base.
 - End-to-end live state remains pending only on the account-level Tailscale
   Funnel approval currently open in the browser.
+- Performed a security hardening pass before enabling Funnel: bounded global
+  HTTP/SSE load and slow-client buffers, rate-limited reconnects, upstream
+  response validation, private rotating logs/state, Discord destination and
+  mention validation, mock-mode production rejection, and exact CORS handling.
+- Added immutable GitHub Actions pins, a mandatory verify job, tracked/deploy
+  tree secret scanning, browser CSP/referrer policy, fetch timeouts, and
+  exponential retry jitter. Enabled GitHub Dependabot alerts and automated
+  security fixes; secret scanning and push protection were already enabled.
+- Updated Cheerio to `1.2.0`; `npm audit --omit=dev` reports zero known
+  vulnerabilities. Updated local repository author email for future commits to
+  `butterserverrobot@gmail.com`.
+- Added deletion-blind-spot coverage for an outer guard alone on an adjacent
+  page. Fixed bounded recovery so repeated cooldown windows advance beyond the
+  first five pages without increasing the per-poll request ceiling.
+- `npm run verify` now passes 43 tests locally and on `snb-macbook-pro`, plus
+  syntax/build and mock `86 -> 87` smoke checks. A real-browser desktop/mobile
+  smoke observed `187 -> 188` and `86 -> 87` over SSE with no console errors;
+  an offline/online cycle also recovered to the latest value without errors.
+- Updated remote Node from `22.22.3` to checksum-verified `22.23.2`, deployed
+  the hardened service, and verified live DC state for posts `8` through `11`.
+  The launchd service is healthy on `127.0.0.1:3000` only, uses a 256MB heap,
+  file limits `1024/2048`, empty service `SSH_AUTH_SOCK`, private runtime files,
+  and bounded application logs.
+- Kept Funnel disabled. Remote TCP 3000 and Funnel HTTPS are both closed.
+  Tailscale `1.102.2` is verified and staged at
+  `/Users/snb/Downloads/Tailscale-1.102.2-macos.pkg`, but installation requires
+  an interactive administrator password. macOS `14.8.9` also remains pending
+  because it requires a 13.3GB download and restart.
+- Existing public commits still contain the previous email. Replacing that
+  metadata and publishing this patch remain pending explicit approval for the
+  required history rewrite and force-push. Real Discord delivery remains
+  pending a webhook credential.
+- Final review confirmed one residual availability limit: the default Funnel
+  HTTP proxy does not give this backend a trustworthy original client IP. The
+  global caps protect the Mac, but one source can still occupy all 200 SSE
+  slots. Tailscale PROXY protocol or an external edge/WAF is required for
+  enforceable per-source limits; neither is enabled in the closed deployment.
