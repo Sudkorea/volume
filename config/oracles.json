@@ -1,0 +1,31 @@
+{
+  "galleryId": "volume",
+  "initialPage": 1,
+  "guards": {
+    "newer": 11,
+    "older": 8
+  },
+  "modes": {
+    "normal": {
+      "label": "일반 오라클",
+      "postNo": 9,
+      "modulus": 100,
+      "title": "볼륨 조절용 게시글"
+    },
+    "boost": {
+      "label": "제목낚시 부스트",
+      "postNo": 10,
+      "modulus": 101,
+      "title": "ㅇㅎ) 터질듯한"
+    }
+  },
+  "polling": {
+    "activeMs": 2000,
+    "burstMs": 1000,
+    "burstWindowMs": 10000,
+    "idleMs": 30000,
+    "requestTimeoutMs": 4500,
+    "maxBackoffMs": 60000,
+    "deletionConfirmations": 3
+  }
+}

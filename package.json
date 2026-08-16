@@ -1,0 +1,22 @@
+{
+  "name": "volume-oracle",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DCInside view-count driven shared browser volume controller",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "dev": "ORACLE_MOCK=1 node --env-file-if-exists=.env --watch server/main.js",
+    "start": "node --env-file-if-exists=.env server/main.js",
+    "test": "node --test test/*.test.js",
+    "build": "node scripts/build.js",
+    "smoke": "node scripts/smoke-test.js",
+    "test:discord": "node --env-file-if-exists=.env scripts/test-discord.js",
+    "verify": "npm test && npm run build && npm run smoke"
+  },
+  "dependencies": {
+    "cheerio": "1.0.0"
+  }
+}

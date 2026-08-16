@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+  <dict>
+    <key>Label</key>
+    <string>com.volume-oracle</string>
+    <key>ProgramArguments</key>
+    <array>
+      <string>/Users/snb/.local/bin/node</string>
+      <string>--env-file-if-exists=__APP_DIR__/.env</string>
+      <string>__APP_DIR__/server/main.js</string>
+    </array>
+    <key>WorkingDirectory</key>
+    <string>__APP_DIR__</string>
+    <key>EnvironmentVariables</key>
+    <dict>
+      <key>HOST</key>
+      <string>127.0.0.1</string>
+      <key>PORT</key>
+      <string>3000</string>
+      <key>ALLOWED_ORIGINS</key>
+      <string>https://sudkorea.github.io</string>
+    </dict>
+    <key>RunAtLoad</key>
+    <true/>
+    <key>KeepAlive</key>
+    <true/>
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+    <key>StandardOutPath</key>
+    <string>__APP_DIR__/runtime/service.log</string>
+    <key>StandardErrorPath</key>
+    <string>__APP_DIR__/runtime/service.error.log</string>
+  </dict>
+</plist>
