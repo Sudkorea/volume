@@ -32,8 +32,8 @@
   health behavior pass automated tests.
 - [x] Remote launchd runs the hardened service with bounded logs, Node heap,
   file descriptors, and no inherited SSH agent socket.
-- [ ] GitHub Pages deploys only after verification with immutable Action pins.
+- [x] GitHub Pages deploys only after verification with immutable Action pins.
 - [x] Dependabot alerts and automated security updates are enabled.
-- [ ] Existing public commit metadata uses `butterserverrobot@gmail.com`.
+- [x] Existing public commit metadata uses `butterserverrobot@gmail.com`.
 - [ ] A PROXY-aware local edge or external WAF enforces per-source limits before
   high-traffic public exposure.

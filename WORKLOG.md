@@ -98,10 +98,17 @@
   `/Users/snb/Downloads/Tailscale-1.102.2-macos.pkg`, but installation requires
   an interactive administrator password. macOS `14.8.9` also remains pending
   because it requires a 13.3GB download and restart.
-- Existing public commits still contain the previous email. Replacing that
-  metadata and publishing this patch remain pending explicit approval for the
-  required history rewrite and force-push. Real Discord delivery remains
-  pending a webhook credential.
+- Rewrote the two existing public commits and the security commit so author and
+  committer metadata use `butterserverrobot@gmail.com`. Preserved the old
+  history in the local-only `backup/pre-security-email-rewrite-20260816` ref,
+  verified an identical final tree, and updated `main` with an exact-lease
+  `force-with-lease` push.
+- GitHub Pages run `31953196869` passed verification and deployment after the
+  history update. Refreshed every GitHub-owned Action to its current release,
+  pinned each `uses` entry to a full commit SHA, restricted Actions to
+  GitHub-owned actions with mandatory SHA pins, and kept the workflow token
+  read-only with pull-request approvals disabled.
+- Real Discord delivery remains pending a webhook credential.
 - Final review confirmed one residual availability limit: the default Funnel
   HTTP proxy does not give this backend a trustworthy original client IP. The
   global caps protect the Mac, but one source can still occupy all 200 SSE
