@@ -13,11 +13,41 @@ test("GitHub Pages document declares a restrictive client security policy", asyn
   assert.match(html, /frame-src https:\/\/www\.youtube-nocookie\.com/);
   assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
   assert.doesNotMatch(html, /'unsafe-(?:inline|eval)'/);
-  assert.match(html, /href="\.\/styles\.css\?v=20260819-youtube1"/);
-  assert.match(html, /src="\.\/app\.js\?v=20260819-youtube1"/);
+  assert.match(html, /href="\.\/styles\.css\?v=20260820-share1"/);
+  assert.match(html, /src="\.\/app\.js\?v=20260820-share1"/);
   assert.match(httpServer, /"script-src 'self' https:\/\/www\.youtube\.com"/);
   assert.match(httpServer, /"frame-src https:\/\/www\.youtube-nocookie\.com"/);
   assert.match(httpServer, /"Referrer-Policy": "strict-origin-when-cross-origin"/);
+});
+
+test("share action uses the selected post and removed diagnostics stay removed", async () => {
+  const [html, app, styles, share] = await Promise.all([
+    readFile("public/index.html", "utf8"),
+    readFile("public/app.js", "utf8"),
+    readFile("public/styles.css", "utf8"),
+    readFile("public/share.js", "utf8"),
+  ]);
+  assert.match(html, /id="share-button"[^>]*type="button"[^>]*disabled/);
+  assert.match(html, /<input id="boost-choice" type="checkbox">/);
+  assert.match(html, />더 빨리 바꾸려면</);
+  assert.match(app, /let selectedMode = "normal"/);
+  assert.match(app, /latestSnapshot\?\.modes\?\.\[selectedMode\]/);
+  assert.match(app, /shareUrl\(\{ title: mode\.title, url: mode\.url \}\)/);
+  assert.match(app, /elements\.shareButton\.addEventListener\("click"/);
+  assert.match(app, /elements\.shareButton\.disabled = false/);
+  assert.match(share, /globalThis\.navigator\?\.share/);
+  assert.match(share, /globalThis\.navigator\?\.clipboard/);
+
+  for (const removed of ["formula", "data-age", "tracked-pages", "poll-period", "event-log"]) {
+    assert.doesNotMatch(html, new RegExp(`id="${removed}"`));
+  }
+  assert.doesNotMatch(html, /id="post-number"/);
+  assert.doesNotMatch(html, /class="recent"/);
+  assert.doesNotMatch(app, /elements\.(?:formula|dataAge|trackedPages|pollPeriod|eventLog)/);
+  assert.doesNotMatch(app, /elements\.postNumber/);
+  assert.doesNotMatch(app, /function addLog\(|lastRenderedVolume/);
+  assert.doesNotMatch(app, /"업데이트됨"/);
+  assert.doesNotMatch(styles, /\.technical-details|\.recent(?:\s|\{|\.)/);
 });
 
 test("YouTube playback is visible, privacy-enhanced, and follows oracle volume", async () => {

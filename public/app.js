@@ -1,3 +1,5 @@
+import { shareUrl } from "./share.js?v=20260820-share1";
+
 const elements = {
   entry: document.querySelector("#entry"),
   dashboard: document.querySelector("#dashboard"),
@@ -8,22 +10,16 @@ const elements = {
   connectionLabel: document.querySelector("#connection-label"),
   volumeDial: document.querySelector("#volume-dial"),
   volumeNumber: document.querySelector("#volume-number"),
-  formula: document.querySelector("#formula"),
   sourceCard: document.querySelector("#source-card"),
   modeBadge: document.querySelector("#mode-badge"),
   postLink: document.querySelector("#post-link"),
-  postNumber: document.querySelector("#post-number"),
   postTitle: document.querySelector("#post-title"),
   viewCount: document.querySelector("#view-count"),
-  trackedPages: document.querySelector("#tracked-pages"),
-  pollPeriod: document.querySelector("#poll-period"),
-  clientCount: document.querySelector("#client-count"),
-  dataAge: document.querySelector("#data-age"),
+  shareButton: document.querySelector("#share-button"),
   audioToggle: document.querySelector("#audio-toggle"),
   audioCaption: document.querySelector("#audio-caption"),
   youtubeFrame: document.querySelector("#youtube-frame"),
   youtubePlayer: document.querySelector("#youtube-player"),
-  eventLog: document.querySelector("#event-log"),
   alertBanner: document.querySelector("#alert-banner"),
   alertTitle: document.querySelector("#alert-title"),
   alertCopy: document.querySelector("#alert-copy"),
@@ -458,7 +454,7 @@ class YouTubeAudioEngine {
 }
 
 const audio = new YouTubeAudioEngine();
-let selectedMode = "boost";
+let selectedMode = "normal";
 let eventSource = null;
 let fallbackTimer = null;
 let eventRetryTimer = null;
@@ -467,8 +463,8 @@ let eventRetryAttempt = 0;
 let fallbackRetryAttempt = 0;
 let fallbackGeneration = 0;
 let latestSnapshot = null;
-let lastRenderedVolume = null;
 let started = false;
+let shareFeedbackTimer = null;
 
 function formatNumber(value) {
   return Number.isFinite(value) ? value.toLocaleString("ko-KR") : "—";
@@ -480,20 +476,22 @@ function setConnection(kind, label) {
   elements.connectionLabel.textContent = label;
 }
 
-function addLog(message) {
-  const item = document.createElement("li");
-  const time = document.createElement("time");
-  const copy = document.createElement("span");
-  time.textContent = new Intl.DateTimeFormat("ko-KR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-    hour12: false,
-  }).format(new Date());
-  copy.textContent = message;
-  item.append(time, copy);
-  elements.eventLog.prepend(item);
-  while (elements.eventLog.children.length > 3) elements.eventLog.lastElementChild.remove();
+function showShareFeedback(label) {
+  if (shareFeedbackTimer) window.clearTimeout(shareFeedbackTimer);
+  elements.shareButton.textContent = label;
+  shareFeedbackTimer = window.setTimeout(() => {
+    shareFeedbackTimer = null;
+    elements.shareButton.textContent = "공유";
+  }, 1600);
+}
+
+async function shareCurrentPost() {
+  const mode = latestSnapshot?.modes?.[selectedMode];
+  if (!mode?.url) return;
+  const result = await shareUrl({ title: mode.title, url: mode.url });
+  if (result === "shared") showShareFeedback("공유됨");
+  else if (result === "copied") showShareFeedback("복사됨");
+  else if (result === "unavailable") showShareFeedback("공유 실패");
 }
 
 function showAlert(mode, snapshot) {
@@ -526,30 +524,20 @@ function applySnapshot(snapshot) {
   elements.volumeDial.setAttribute("aria-valuenow", String(volume));
   elements.volumeNumber.textContent = Number.isFinite(mode.volume) ? String(volume) : "—";
   elements.viewCount.textContent = formatNumber(mode.views);
-  elements.formula.textContent = Number.isFinite(mode.views)
-    ? `${formatNumber(mode.views)} mod ${mode.modulus} = ${volume}`
-    : "—";
   elements.modeBadge.textContent = "부스트";
   elements.sourceCard.classList.toggle("is-boost", selectedMode === "boost");
   document.body.classList.toggle("boost-active", selectedMode === "boost");
-  elements.postNumber.textContent = String(mode.postNo);
   elements.postTitle.textContent = mode.title;
   elements.postLink.href = mode.url;
-  elements.trackedPages.textContent = `페이지 ${snapshot.trackedPages.join(", ") || "—"}`;
-  elements.pollPeriod.textContent = `주기 ${(snapshot.upstream.nextPollMs / 1000).toFixed(0)}초`;
-  elements.clientCount.textContent = String(snapshot.connectedClients);
+  elements.shareButton.disabled = false;
   elements.discordStatus.textContent = snapshot.discordConfigured ? "알림 설정됨" : "알림 미설정";
 
-  if (snapshot.upstream.status === "live") setConnection("live", "업데이트됨");
+  if (snapshot.upstream.status === "live") setConnection("live", "연결됨");
   else if (snapshot.upstream.status === "degraded") setConnection("degraded", "연결 확인 중");
   else setConnection("", "연결 중");
 
   showAlert(mode, snapshot);
   audio.setVolume(volume);
-  if (lastRenderedVolume !== null && lastRenderedVolume !== mode.volume && Number.isFinite(mode.volume)) {
-    addLog(`조회수 ${formatNumber(mode.views)}, 볼륨 ${mode.volume}%`);
-  }
-  lastRenderedVolume = mode.volume;
 }
 
 function retryDelay(attempt, baseMs = RETRY_BASE_MS, maximumMs = RETRY_MAX_MS) {
@@ -671,8 +659,7 @@ elements.delegateButton.addEventListener("click", async () => {
   started = true;
   elements.entry.hidden = true;
   elements.dashboard.hidden = false;
-  lastRenderedVolume = null;
-  audio.start().catch((error) => addLog(error.message));
+  audio.start().catch(() => {});
   await fetchState().catch(() => setConnection("degraded", "연결 확인 중"));
   connectEvents();
 });
@@ -686,7 +673,8 @@ elements.reselectButton.addEventListener("click", () => {
   elements.boostChoice.checked = selectedMode === "boost";
 });
 
-elements.audioToggle.addEventListener("click", () => audio.toggle().catch((error) => addLog(error.message)));
+elements.audioToggle.addEventListener("click", () => audio.toggle().catch(() => {}));
+elements.shareButton.addEventListener("click", () => shareCurrentPost());
 
 document.addEventListener("visibilitychange", () => {
   if (!started || document.hidden) return;
@@ -696,12 +684,3 @@ document.addEventListener("visibilitychange", () => {
   });
   if (!eventSource && !eventRetryTimer) scheduleEventReconnect();
 });
-
-window.setInterval(() => {
-  if (!latestSnapshot?.observedAt) {
-    elements.dataAge.textContent = "—";
-    return;
-  }
-  const seconds = Math.max(0, Math.floor((Date.now() - Date.parse(latestSnapshot.observedAt)) / 1000));
-  elements.dataAge.textContent = seconds < 5 ? "방금 전" : `${seconds}초 전`;
-}, 1000);

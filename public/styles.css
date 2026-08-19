@@ -158,6 +158,7 @@ h1, h2, p { margin-top: 0; }
 .status.degraded > span:first-child { background: #bd8585; }
 
 .content-grid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(280px, .85fr); gap: 16px; }
+.content-grid > * { min-width: 0; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
 .volume-card { padding: 28px; }
 .card__header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
@@ -218,7 +219,7 @@ body.boost-active .volume-track span {
   border: 0;
 }
 
-.source-card { padding: 24px; }
+.source-card { align-self: start; padding: 24px; }
 .source-card__title { min-height: 38px; display: flex; justify-content: space-between; align-items: flex-start; }
 .boost-badge { padding: 5px 8px; color: #4e6a55; background: var(--boost); border-radius: 999px; font-size: 11px; font-weight: 650; }
 .source-card:not(.is-boost) .boost-badge { display: none; }
@@ -228,7 +229,18 @@ body.boost-active .volume-track span {
 .details dd { margin: 0; font-size: 14px; font-weight: 560; overflow-wrap: anywhere; }
 .details a { color: inherit; text-decoration: none; }
 .details a:hover { text-decoration: underline; text-underline-offset: 3px; }
-.technical-details { display: flex; flex-wrap: wrap; gap: 7px 12px; padding-top: 15px; color: #8a9189; font-size: 10px; }
+.share-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-top: 16px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.share-action span { min-width: 0; }
+.share-action .button { min-height: 34px; flex: 0 0 auto; padding: 0 11px; }
+.share-action .button:disabled { cursor: default; opacity: .48; }
 
 .notice {
   margin-top: 14px;
@@ -240,11 +252,6 @@ body.boost-active .volume-track span {
 }
 .notice strong { font-size: 13px; }
 .notice p { margin: 4px 0 0; font-size: 12px; }
-
-.recent { margin-top: 24px; padding: 0 4px; }
-.recent ol { margin: 0; padding: 0; list-style: none; }
-.recent li { display: grid; grid-template-columns: 72px 1fr; gap: 12px; padding: 8px 0; color: var(--muted); border-top: 1px solid var(--border); font-size: 12px; }
-.recent time { color: #8a9189; font-variant-numeric: tabular-nums; }
 
 footer { margin-top: 32px; color: #969c95; font-size: 11px; text-align: center; }
 
