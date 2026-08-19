@@ -37,3 +37,13 @@
 - [x] Existing public commit metadata uses `butterserverrobot@gmail.com`.
 - [ ] A PROXY-aware local edge or external WAF enforces per-source limits before
   high-traffic public exposure.
+- [x] The visible YouTube player receives every selected oracle volume through
+  `YT.Player.setVolume()` and has a blocked-autoplay fallback.
+- [x] YouTube script/frame CSP origins, Referer identity, minimum player size,
+  and visibility-gated autoplay are covered by tests.
+- [x] The replacement video `XsStb0xbF9Q` plays in the privacy-enhanced embedded
+  player and remains active while the mock oracle volume changes `86 -> 87`.
+- [x] Versioned CSS and JavaScript URLs prevent mixed old/new Pages cache loads.
+- [x] Pull requests run the required `verify` job and only `main` pushes deploy.
+- [ ] The snb Funnel API is publicly healthy and the published Pages origin
+  passes state, SSE, CORS, YouTube playback, and live-volume verification.

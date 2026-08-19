@@ -20,8 +20,9 @@ const elements = {
   clientCount: document.querySelector("#client-count"),
   dataAge: document.querySelector("#data-age"),
   audioToggle: document.querySelector("#audio-toggle"),
-  audioFile: document.querySelector("#audio-file"),
   audioCaption: document.querySelector("#audio-caption"),
+  youtubeFrame: document.querySelector("#youtube-frame"),
+  youtubePlayer: document.querySelector("#youtube-player"),
   eventLog: document.querySelector("#event-log"),
   alertBanner: document.querySelector("#alert-banner"),
   alertTitle: document.querySelector("#alert-title"),
@@ -38,112 +39,425 @@ const FETCH_TIMEOUT_MS = 5000;
 const RETRY_BASE_MS = 1000;
 const RETRY_MAX_MS = 30_000;
 const FALLBACK_SUCCESS_MS = 3000;
+const YOUTUBE_API_TIMEOUT_MS = 15_000;
+const YOUTUBE_API_URL = "https://www.youtube.com/iframe_api";
+const YOUTUBE_EMBED_ORIGIN = "https://www.youtube-nocookie.com";
+const YOUTUBE_VIDEO_ID = "XsStb0xbF9Q";
 
 function apiUrl(pathname) {
   return usePublicApi && configuredApiBase ? `${configuredApiBase}${pathname}` : pathname;
 }
 
-class AudioEngine {
-  constructor() {
-    this.context = null;
-    this.master = null;
-    this.timer = null;
-    this.audio = null;
-    this.mediaSource = null;
-    this.objectUrl = null;
-    this.playing = false;
-    this.volume = 0;
-    this.step = 0;
-  }
+let youtubeApiPromise = null;
 
-  async start() {
-    if (!this.context) {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      if (!AudioContext) throw new Error("오디오를 재생할 수 없는 브라우저입니다.");
-      this.context = new AudioContext();
-      this.master = this.context.createGain();
-      this.master.gain.value = 0;
-      this.master.connect(this.context.destination);
-    }
-    await this.context.resume();
-    this.playing = true;
-    this.startTone();
-    this.updateButton();
-  }
-
-  startTone() {
-    if (this.timer || this.audio) return;
-    this.playTone();
-    this.timer = window.setInterval(() => this.playTone(), 420);
-  }
-
-  stopTone() {
-    if (this.timer) window.clearInterval(this.timer);
-    this.timer = null;
-  }
-
-  playTone() {
-    if (!this.playing || !this.context || this.audio) return;
-    const notes = [220, 277.18, 329.63, 277.18];
-    const oscillator = this.context.createOscillator();
-    const envelope = this.context.createGain();
-    const now = this.context.currentTime;
-    oscillator.type = "sine";
-    oscillator.frequency.value = notes[this.step % notes.length];
-    envelope.gain.setValueAtTime(0.0001, now);
-    envelope.gain.exponentialRampToValueAtTime(0.08, now + 0.015);
-    envelope.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
-    oscillator.connect(envelope).connect(this.master);
-    oscillator.start(now);
-    oscillator.stop(now + 0.24);
-    this.step += 1;
-  }
-
-  setVolume(volume) {
-    this.volume = Math.max(0, Math.min(100, Number(volume) || 0));
-    if (this.master && this.context) {
-      this.master.gain.setTargetAtTime(this.volume / 100, this.context.currentTime, 0.025);
-    }
-  }
-
-  async toggle() {
-    if (!this.context) return;
-    this.playing = !this.playing;
-    if (this.audio) {
-      if (this.playing) await this.audio.play();
-      else this.audio.pause();
-    } else if (this.playing) {
-      await this.context.resume();
-      this.startTone();
-    } else {
-      this.stopTone();
-    }
-    this.updateButton();
-  }
-
-  async useFile(file) {
-    if (!file || !this.context) return;
-    this.stopTone();
-    if (this.audio) this.audio.pause();
-    if (this.objectUrl) URL.revokeObjectURL(this.objectUrl);
-    this.objectUrl = URL.createObjectURL(file);
-    this.audio = new Audio(this.objectUrl);
-    this.audio.loop = true;
-    this.mediaSource = this.context.createMediaElementSource(this.audio);
-    this.mediaSource.connect(this.master);
-    this.playing = true;
-    await this.audio.play();
-    elements.audioCaption.textContent = file.name;
-    this.updateButton();
-  }
-
-  updateButton() {
-    elements.audioToggle.setAttribute("aria-pressed", String(this.playing));
-    elements.audioToggle.textContent = this.playing ? "일시정지" : "재생";
+function resetYouTubeApiBootstrap() {
+  if (window.YT?.Player) return;
+  document.querySelector('#www-widgetapi-script[src^="https://www.youtube.com/"]')?.remove();
+  window.YT = undefined;
+  window.YTConfig = undefined;
+  try {
+    delete window.onYTReady;
+  } catch {
+    window.onYTReady = undefined;
   }
 }
 
-const audio = new AudioEngine();
+function loadYouTubeApi() {
+  if (window.YT?.Player) return Promise.resolve(window.YT);
+  if (youtubeApiPromise) return youtubeApiPromise;
+
+  youtubeApiPromise = new Promise((resolve, reject) => {
+    const previousReady = window.onYouTubeIframeAPIReady;
+    let script = null;
+    let timeout = null;
+    let settled = false;
+
+    const cleanup = () => {
+      if (timeout) window.clearTimeout(timeout);
+      script?.removeEventListener("error", fail);
+      if (window.onYouTubeIframeAPIReady === ready) {
+        if (previousReady) window.onYouTubeIframeAPIReady = previousReady;
+        else delete window.onYouTubeIframeAPIReady;
+      }
+    };
+    const fail = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      script?.remove();
+      resetYouTubeApiBootstrap();
+      reject(new Error("영상을 불러올 수 없습니다."));
+    };
+    const ready = () => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (typeof previousReady === "function") {
+        try {
+          previousReady();
+        } catch {
+          // The YouTube API itself is ready even if another consumer failed.
+        }
+      }
+      if (window.YT?.Player) {
+        resolve(window.YT);
+      } else {
+        script?.remove();
+        resetYouTubeApiBootstrap();
+        reject(new Error("영상을 불러올 수 없습니다."));
+      }
+    };
+
+    script = document.querySelector(`script[src="${YOUTUBE_API_URL}"]`);
+    if (!script) {
+      script = document.createElement("script");
+      script.src = YOUTUBE_API_URL;
+      script.async = true;
+      document.head.append(script);
+    }
+    script.addEventListener("error", fail, { once: true });
+    window.onYouTubeIframeAPIReady = ready;
+    timeout = window.setTimeout(fail, YOUTUBE_API_TIMEOUT_MS);
+  });
+
+  youtubeApiPromise = youtubeApiPromise.catch((error) => {
+    youtubeApiPromise = null;
+    throw error;
+  });
+  return youtubeApiPromise;
+}
+
+class YouTubeAudioEngine {
+  constructor() {
+    this.player = null;
+    this.playerPromise = null;
+    this.ready = false;
+    this.playing = false;
+    this.playRequested = false;
+    this.soundRequested = false;
+    this.unmuteAttempted = false;
+    this.autoplayBlocked = false;
+    this.errorMessage = null;
+    this.volume = 0;
+    this.soundCheckTimer = null;
+    this.playerGeneration = 0;
+    this.visible = !("IntersectionObserver" in window);
+    this.visibilityObserver = null;
+
+    if (!this.visible) {
+      this.visibilityObserver = new IntersectionObserver(([entry]) => {
+        this.visible = Boolean(entry?.isIntersecting && entry.intersectionRatio > 0.5);
+        if (this.visible) this.applyPlayback();
+      }, { threshold: [0, 0.51, 1] });
+      this.visibilityObserver.observe(elements.youtubeFrame);
+    }
+  }
+
+  createIframe() {
+    const parameters = new URLSearchParams({
+      controls: "0",
+      disablekb: "1",
+      enablejsapi: "1",
+      iv_load_policy: "3",
+      loop: "1",
+      origin: window.location.origin,
+      playlist: YOUTUBE_VIDEO_ID,
+      playsinline: "1",
+      rel: "0",
+    });
+    const iframe = document.createElement("iframe");
+    iframe.id = "youtube-player-iframe";
+    iframe.src = `${YOUTUBE_EMBED_ORIGIN}/embed/${YOUTUBE_VIDEO_ID}?${parameters}`;
+    iframe.title = "볼륨 테스트 영상";
+    iframe.allow = "autoplay; encrypted-media";
+    iframe.referrerPolicy = "strict-origin-when-cross-origin";
+    iframe.loading = "eager";
+    return iframe;
+  }
+
+  ensurePlayer() {
+    if (this.playerPromise) return this.playerPromise;
+
+    this.playerPromise = loadYouTubeApi().then((YT) => new Promise((resolve, reject) => {
+      const generation = ++this.playerGeneration;
+      const iframe = this.createIframe();
+      let ready = false;
+      let expired = false;
+      let playerInstance = null;
+      let loadTimeout = null;
+      let playerTimeout = null;
+
+      const clearAttemptTimers = () => {
+        if (loadTimeout) window.clearTimeout(loadTimeout);
+        if (playerTimeout) window.clearTimeout(playerTimeout);
+        loadTimeout = null;
+        playerTimeout = null;
+      };
+      const expireAttempt = () => {
+        if (expired || ready) return;
+        expired = true;
+        clearAttemptTimers();
+        try {
+          playerInstance?.destroy?.();
+        } catch {
+          // The iframe can already be detached by a failed YouTube handshake.
+        }
+        if (this.player === playerInstance) this.player = null;
+        if (iframe.isConnected) iframe.remove();
+        reject(new Error("영상을 불러올 수 없습니다."));
+      };
+
+      loadTimeout = window.setTimeout(expireAttempt, YOUTUBE_API_TIMEOUT_MS);
+      iframe.addEventListener("load", () => {
+        if (expired) return;
+        window.clearTimeout(loadTimeout);
+        loadTimeout = null;
+        playerTimeout = window.setTimeout(expireAttempt, YOUTUBE_API_TIMEOUT_MS);
+        try {
+          playerInstance = new YT.Player(iframe, {
+            events: {
+              onReady: (event) => {
+                if (expired || generation !== this.playerGeneration) {
+                  event.target.destroy();
+                  return;
+                }
+                ready = true;
+                clearAttemptTimers();
+                this.player = event.target;
+                this.ready = true;
+                this.player.setVolume(this.volume);
+                this.player.mute();
+                resolve(this.player);
+              },
+              onStateChange: (event) => {
+                if (!expired && generation === this.playerGeneration) {
+                  this.handleStateChange(event, YT, generation);
+                }
+              },
+              onError: (event) => {
+                if (expired || generation !== this.playerGeneration) return;
+                const error = new Error(this.errorForCode(event.data));
+                if (!ready) {
+                  expired = true;
+                  clearAttemptTimers();
+                  reject(error);
+                } else {
+                  this.handleError(error);
+                }
+              },
+              onAutoplayBlocked: () => {
+                if (!expired && generation === this.playerGeneration) {
+                  this.handleAutoplayBlocked(YT);
+                }
+              },
+            },
+          });
+          if (!expired && generation === this.playerGeneration) this.player = playerInstance;
+        } catch {
+          expireAttempt();
+        }
+      }, { once: true });
+      elements.youtubePlayer.replaceChildren(iframe);
+    })).catch((error) => {
+      this.playerPromise = null;
+      this.handleError(error);
+      throw error;
+    });
+
+    return this.playerPromise;
+  }
+
+  async start() {
+    if (this.errorMessage) this.resetAfterError();
+    this.clearSoundCheck();
+    this.playRequested = true;
+    this.soundRequested = true;
+    this.unmuteAttempted = false;
+    this.autoplayBlocked = false;
+    this.errorMessage = null;
+    this.setStatus("영상 준비 중");
+    this.updateButton();
+    await this.ensurePlayer();
+    this.applyPlayback();
+  }
+
+  setVolume(volume) {
+    this.volume = Math.round(Math.max(0, Math.min(100, Number(volume) || 0)));
+    if (this.ready) this.player.setVolume(this.volume);
+  }
+
+  applyPlayback() {
+    if (!this.ready || !this.playRequested) return;
+    if (!this.visible) {
+      this.setStatus("영상이 보이면 재생됩니다.");
+      return;
+    }
+    if (this.playing || this.autoplayBlocked) return;
+
+    this.player.setVolume(this.volume);
+    this.player.mute();
+    this.player.playVideo();
+    this.setStatus("불러오는 중");
+    this.updateButton();
+  }
+
+  handleStateChange(event, YT, generation) {
+    if (event.data === YT.PlayerState.PLAYING) {
+      this.playing = true;
+      this.autoplayBlocked = false;
+      if (this.soundRequested && !this.unmuteAttempted) {
+        this.unmuteAttempted = true;
+        this.player.setVolume(this.volume);
+        this.player.unMute();
+        this.scheduleSoundCheck(YT, generation);
+      }
+      this.setStatus("재생 중");
+    } else if (event.data === YT.PlayerState.PAUSED) {
+      this.playing = false;
+      if (this.playRequested && this.soundRequested && this.unmuteAttempted) {
+        this.autoplayBlocked = true;
+        this.setStatus("소리 켜기 필요");
+      } else {
+        this.setStatus("일시정지");
+      }
+    } else if (event.data === YT.PlayerState.BUFFERING) {
+      this.setStatus("불러오는 중");
+    }
+    this.updateButton();
+  }
+
+  scheduleSoundCheck(YT, generation) {
+    this.clearSoundCheck();
+    this.soundCheckTimer = window.setTimeout(() => {
+      this.soundCheckTimer = null;
+      if (
+        generation !== this.playerGeneration
+        || !this.ready
+        || !this.playRequested
+        || !this.soundRequested
+      ) return;
+      const state = this.player.getPlayerState();
+      if (this.player.isMuted() || state === YT.PlayerState.PAUSED) {
+        this.autoplayBlocked = true;
+        this.playing = state === YT.PlayerState.PLAYING;
+        this.setStatus("소리 켜기 필요");
+        this.updateButton();
+      }
+    }, 500);
+  }
+
+  clearSoundCheck() {
+    if (this.soundCheckTimer) window.clearTimeout(this.soundCheckTimer);
+    this.soundCheckTimer = null;
+  }
+
+  handleAutoplayBlocked(YT) {
+    this.clearSoundCheck();
+    this.autoplayBlocked = true;
+    this.playing = this.ready && this.player.getPlayerState() === YT.PlayerState.PLAYING;
+    this.setStatus("소리 켜기 필요");
+    this.updateButton();
+  }
+
+  handleError(error) {
+    this.clearSoundCheck();
+    this.discardPlayer();
+    this.errorMessage = error.message;
+    this.playing = false;
+    this.playRequested = false;
+    this.soundRequested = false;
+    this.unmuteAttempted = false;
+    this.autoplayBlocked = false;
+    this.setStatus(error.message);
+    this.updateButton();
+  }
+
+  errorForCode(code) {
+    if (code === 100) return "영상을 찾을 수 없습니다.";
+    if (code === 101 || code === 150) return "이 영상은 여기서 재생할 수 없습니다.";
+    if (code === 153) return "영상 연결을 확인할 수 없습니다.";
+    return "영상을 재생할 수 없습니다.";
+  }
+
+  resetAfterError() {
+    this.clearSoundCheck();
+    this.discardPlayer();
+    this.errorMessage = null;
+    this.unmuteAttempted = false;
+    elements.youtubePlayer.replaceChildren();
+  }
+
+  discardPlayer() {
+    this.playerGeneration += 1;
+    const player = this.player;
+    this.player = null;
+    this.playerPromise = null;
+    this.ready = false;
+    try {
+      player?.destroy?.();
+    } catch {
+      // A failed player may already have detached its iframe.
+    }
+    elements.youtubePlayer.replaceChildren();
+  }
+
+  async toggle() {
+    if (this.errorMessage) this.resetAfterError();
+    if (!this.ready) {
+      if (this.playRequested) {
+        this.playRequested = false;
+        this.playing = false;
+        this.setStatus("일시정지");
+        this.updateButton();
+        return;
+      }
+      await this.start();
+      return;
+    }
+
+    if (this.playing && !this.autoplayBlocked) {
+      this.pause();
+      return;
+    }
+
+    this.playRequested = true;
+    this.soundRequested = true;
+    this.unmuteAttempted = true;
+    this.autoplayBlocked = false;
+    this.clearSoundCheck();
+    this.player.setVolume(this.volume);
+    this.player.unMute();
+    this.player.playVideo();
+    this.playing = true;
+    this.setStatus("재생 중");
+    this.updateButton();
+  }
+
+  pause() {
+    this.clearSoundCheck();
+    this.playRequested = false;
+    this.soundRequested = false;
+    this.unmuteAttempted = false;
+    this.autoplayBlocked = false;
+    if (this.ready) this.player.pauseVideo();
+    this.playing = false;
+    this.setStatus("일시정지");
+    this.updateButton();
+  }
+
+  setStatus(message) {
+    elements.audioCaption.textContent = message;
+  }
+
+  updateButton() {
+    elements.audioToggle.setAttribute("aria-pressed", String(this.playing && !this.autoplayBlocked));
+    if (this.errorMessage) elements.audioToggle.textContent = "다시 시도";
+    else if (this.autoplayBlocked) elements.audioToggle.textContent = "소리 켜기";
+    else elements.audioToggle.textContent = this.playRequested ? "일시정지" : "재생";
+  }
+}
+
+const audio = new YouTubeAudioEngine();
 let selectedMode = "boost";
 let eventSource = null;
 let fallbackTimer = null;
@@ -354,15 +668,11 @@ function disconnectEvents() {
 
 elements.delegateButton.addEventListener("click", async () => {
   selectedMode = elements.boostChoice.checked ? "boost" : "normal";
-  try {
-    await audio.start();
-  } catch (error) {
-    addLog(error.message);
-  }
   started = true;
   elements.entry.hidden = true;
   elements.dashboard.hidden = false;
   lastRenderedVolume = null;
+  audio.start().catch((error) => addLog(error.message));
   await fetchState().catch(() => setConnection("degraded", "연결 확인 중"));
   connectEvents();
 });
@@ -370,15 +680,13 @@ elements.delegateButton.addEventListener("click", async () => {
 elements.reselectButton.addEventListener("click", () => {
   disconnectEvents();
   started = false;
+  audio.pause();
   elements.dashboard.hidden = true;
   elements.entry.hidden = false;
   elements.boostChoice.checked = selectedMode === "boost";
 });
 
 elements.audioToggle.addEventListener("click", () => audio.toggle().catch((error) => addLog(error.message)));
-elements.audioFile.addEventListener("change", () => {
-  audio.useFile(elements.audioFile.files?.[0]).catch((error) => addLog(error.message));
-});
 
 document.addEventListener("visibilitychange", () => {
   if (!started || document.hidden) return;

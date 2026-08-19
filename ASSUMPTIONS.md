@@ -34,3 +34,8 @@
 - The requested replacement Git email is `butterserverrobot@gmail.com`; the
   two existing public commits require an explicitly approved history rewrite
   and force-push before the old address disappears from GitHub.
+- YouTube playback uses the official visible IFrame player and never downloads
+  or proxies the source media. The selected video must permit embedding.
+- Browsers may block audible autoplay. The existing `계속` click requests sound;
+  if the delayed player load loses that activation, the external playback
+  button becomes a direct `소리 켜기` fallback.

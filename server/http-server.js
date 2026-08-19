@@ -15,16 +15,17 @@ const MIME_TYPES = {
 const SECURITY_HEADERS = {
   "Content-Security-Policy": [
     "default-src 'self'",
-    "script-src 'self'",
+    "script-src 'self' https://www.youtube.com",
     "style-src 'self'",
     "connect-src 'self'",
     "img-src 'self' data:",
     "media-src 'self' blob:",
+    "frame-src https://www.youtube-nocookie.com",
     "object-src 'none'",
     "base-uri 'none'",
     "frame-ancestors 'none'",
   ].join("; "),
-  "Referrer-Policy": "no-referrer",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
   "X-Content-Type-Options": "nosniff",
   "X-Frame-Options": "DENY",
 };
