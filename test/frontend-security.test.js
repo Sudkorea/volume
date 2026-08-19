@@ -100,6 +100,7 @@ test("deployment leaves file-descriptor headroom and ignores spoofable proxy hea
   assert.doesNotMatch(httpServer, /x-forwarded-for/i);
   assert.match(plist, /<key>NumberOfFiles<\/key>\s+<integer>1024<\/integer>/);
   assert.match(plist, /<key>SSH_AUTH_SOCK<\/key>\s+<string><\/string>/);
+  assert.match(installer, /for bootstrap_attempt in \{1\.\.10\}/);
   assert.match(installer, /for attempt in \{1\.\.20\}/);
   assert.match(installer, /chmod 600 "\$runtime_file"/);
 });

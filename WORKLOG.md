@@ -152,3 +152,8 @@
   Tailscale ping while refusing LAN SSH and timing out tailnet SSH. Publication
   remains gated on restoring remote access, verifying the service, and bringing
   Funnel online before the new frontend reaches `main`.
+- LAN SSH recovered after the snb Mac changed addresses. The application release
+  was transferred with a matching SHA-256 and the pre-release source was archived
+  before extraction. The first launchd bootstrap raced the preceding bootout and
+  returned I/O error 5; a second bootstrap restored the healthy service, and the
+  installer now retries that bounded transition automatically.
