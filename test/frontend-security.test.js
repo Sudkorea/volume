@@ -12,6 +12,7 @@ test("GitHub Pages document declares a restrictive client security policy", asyn
   assert.match(html, /connect-src 'self' https:\/\/snb-macbook-pro\.tail643f01\.ts\.net/);
   assert.match(html, /frame-src https:\/\/www\.youtube-nocookie\.com/);
   assert.match(html, /name="referrer" content="strict-origin-when-cross-origin"/);
+  assert.doesNotMatch(html, /name="description"/);
   assert.doesNotMatch(html, /'unsafe-(?:inline|eval)'/);
   assert.match(html, /href="\.\/styles\.css\?v=20260820-share1"/);
   assert.match(html, /src="\.\/app\.js\?v=20260820-share1"/);
