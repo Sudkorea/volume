@@ -8,6 +8,7 @@ const required = [
   "public/index.html",
   "public/styles.css",
   "public/app.js",
+  "public/share.js",
   "server/main.js",
   "server/tracker.js",
   "config/oracles.json",

@@ -16,12 +16,26 @@ try {
   const page = await fetch(baseUrl);
   const html = await page.text();
   const hasSetup = html.includes('id="boost-choice"') && html.includes('id="delegate-button"');
-  const hasDashboard = html.includes('id="volume-number"') && html.includes('id="view-count"');
-  const hasProjectAssets = html.includes('href="./styles.css?v=20260819-youtube1"')
-    && html.includes('src="./app.js?v=20260819-youtube1"');
+  const hasDashboard = html.includes('id="volume-number"')
+    && html.includes('id="view-count"')
+    && html.includes('id="share-button"');
+  const removedDiagnostics = ["formula", "data-age", "tracked-pages", "poll-period", "event-log"]
+    .every((id) => !html.includes(`id="${id}"`));
+  const postNumberIsHidden = !html.includes('id="post-number"');
+  const hasProjectAssets = html.includes('href="./styles.css?v=20260820-share1"')
+    && html.includes('src="./app.js?v=20260820-share1"');
   const hasPublicApi = html.includes("https://snb-macbook-pro.tail643f01.ts.net");
   const hasYouTubePlayer = html.includes('id="youtube-player"') && html.includes('id="audio-toggle"');
-  if (!page.ok || !hasSetup || !hasDashboard || !hasProjectAssets || !hasPublicApi || !hasYouTubePlayer) {
+  if (
+    !page.ok
+    || !hasSetup
+    || !hasDashboard
+    || !removedDiagnostics
+    || !postNumberIsHidden
+    || !hasProjectAssets
+    || !hasPublicApi
+    || !hasYouTubePlayer
+  ) {
     throw new Error("UI did not render with Pages configuration");
   }
 

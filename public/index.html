@@ -10,7 +10,7 @@
     <meta name="volume-api-base" content="https://snb-macbook-pro.tail643f01.ts.net">
     <title>볼륨</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="./styles.css?v=20260819-youtube1">
+    <link rel="stylesheet" href="./styles.css?v=20260820-share1">
   </head>
   <body>
     <section class="setup" id="entry" aria-labelledby="entry-title">
@@ -20,7 +20,7 @@
         <p class="setup__description">이 페이지에서 재생하는 소리의 크기를 조절합니다.</p>
 
         <label class="boost-option" id="boost-option">
-          <input id="boost-choice" type="checkbox" checked>
+          <input id="boost-choice" type="checkbox">
           <span class="switch" aria-hidden="true"><span></span></span>
           <span class="boost-option__copy">
             <strong>볼륨 조절 부스트</strong>
@@ -88,26 +88,17 @@
           <dl class="details">
             <div>
               <dt>게시글</dt>
-              <dd><a id="post-link" href="#" target="_blank" rel="noreferrer"><span id="post-number">—</span> · <span id="post-title">확인 중</span></a></dd>
+              <dd><a id="post-link" href="#" target="_blank" rel="noreferrer"><span id="post-title">확인 중</span></a></dd>
             </div>
             <div>
               <dt>조회수</dt>
               <dd id="view-count">—</dd>
             </div>
-            <div>
-              <dt>계산</dt>
-              <dd id="formula">—</dd>
-            </div>
-            <div>
-              <dt>업데이트</dt>
-              <dd id="data-age">—</dd>
-            </div>
           </dl>
 
-          <div class="technical-details">
-            <span id="tracked-pages">페이지 —</span>
-            <span id="poll-period">주기 —</span>
-            <span id="client-count" hidden></span>
+          <div class="share-action">
+            <span>더 빨리 바꾸려면</span>
+            <button class="button button--secondary" id="share-button" type="button" disabled>공유</button>
           </div>
         </aside>
       </section>
@@ -119,17 +110,12 @@
         </div>
       </aside>
 
-      <section class="recent" aria-live="polite">
-        <p class="label">최근 변경</p>
-        <ol id="event-log"><li><time>—</time><span>변경 내역이 없습니다.</span></li></ol>
-      </section>
-
       <footer>
-        <span>볼륨은 게시글 조회수로 계산됩니다.</span>
+        <span>볼륨은 게시글 조회수로 정해집니다.</span>
         <span id="discord-status" hidden></span>
       </footer>
     </main>
 
-    <script type="module" src="./app.js?v=20260819-youtube1"></script>
+    <script type="module" src="./app.js?v=20260820-share1"></script>
   </body>
 </html>
