@@ -35,7 +35,20 @@ chmod 600 "$plist"
 plutil -lint "$plist"
 
 launchctl bootout "gui/$UID/$label" 2>/dev/null || true
-launchctl bootstrap "gui/$UID" "$plist"
+bootstrap_ok=0
+bootstrap_error=""
+for bootstrap_attempt in {1..10}; do
+  if bootstrap_error="$(launchctl bootstrap "gui/$UID" "$plist" 2>&1)"; then
+    bootstrap_ok=1
+    break
+  fi
+  sleep 0.5
+done
+if (( ! bootstrap_ok )); then
+  print -u2 "Volume Oracle launchd bootstrap failed after retries"
+  print -u2 -- "$bootstrap_error"
+  exit 1
+fi
 launchctl kickstart -k "gui/$UID/$label"
 
 health_response=""
