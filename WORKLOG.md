@@ -157,3 +157,24 @@
   before extraction. The first launchd bootstrap raced the preceding bootout and
   returned I/O error 5; a second bootstrap restored the healthy service, and the
   installer now retries that bounded transition automatically.
+- Upgraded the snb Mac to Tailscale `1.102.2`, enabled tailnet HTTPS, and granted
+  the `funnel` node attribute only to the server's exact Tailscale IP selector.
+  No tag was applied, so the Mac retains its user ownership, `autogroup:self`
+  behavior, and existing SSH identity. A policy reread confirmed that no
+  `autogroup:member` Funnel grant was added.
+- Started the persistent Funnel route from public HTTPS port 443 to
+  `http://127.0.0.1:3000`. Public DNS, health, state, exact-origin CORS, denied
+  foreign-origin CORS, and live SSE events were verified through a public Funnel
+  relay address. The Node service remains bound only to loopback.
+- Merged PR #1 with the required check passing and deployed commit `bc37205` to
+  GitHub Pages in successful run `32234502646`. A public-DNS Chromium run loaded
+  the published page, played `XsStb0xbF9Q`, displayed boost volume `49`, and sent
+  YouTube playback telemetry with volume `49`.
+- MagicDNS intentionally resolves the Funnel hostname to the private Tailscale
+  IP for devices inside this tailnet. This workstation's private TCP path to the
+  snb Mac currently times out even though the public Funnel path is healthy, so
+  final public-path testing forced the public DNS answer. Users outside the
+  tailnet—the contest audience—use the verified public route normally.
+- Discord delivery remains disabled until a real webhook is configured. The
+  previously documented single-source SSE capacity risk also remains because the
+  HTTP Funnel proxy does not provide a trustworthy original client identity.

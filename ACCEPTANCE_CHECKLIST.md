@@ -15,16 +15,16 @@
 - [x] Browser smoke test passes.
 - [x] Application is installed as a persistent service on `snb-macbook-pro`.
 - [ ] A real Discord webhook credential is configured and delivery is verified.
-- [ ] Tailscale Funnel is approved and the public HTTPS URL is verified.
+- [x] Tailscale Funnel is approved and the public HTTPS URL is verified.
 - [x] User-facing copy is factual and does not explain or oversell the joke.
 - [x] Default styling is neutral and boost styling uses only pale mint/yellow.
 - [x] The page still exposes source post, view count, modulo, freshness, and
   deletion status without protocol-themed chrome.
 - [x] The static UI is published at `https://sudkorea.github.io/volume/`.
 - [x] GitHub Pages loads assets correctly from the `/volume/` project path.
-- [ ] The Pages origin can fetch state and receive SSE from the Funnel origin.
+- [x] The Pages origin can fetch state and receive SSE from the Funnel origin.
 - [x] Other browser origins do not receive CORS permission from the API.
-- [ ] Tailscale is upgraded to a release fixed for TS-2026-008 before Funnel is
+- [x] Tailscale is upgraded to a release fixed for TS-2026-008 before Funnel is
   enabled.
 - [x] HTTP/SSE connection limits, backpressure, polling throttles, and malformed
   request handling pass automated tests.
@@ -45,5 +45,5 @@
   player and remains active while the mock oracle volume changes `86 -> 87`.
 - [x] Versioned CSS and JavaScript URLs prevent mixed old/new Pages cache loads.
 - [x] Pull requests run the required `verify` job and only `main` pushes deploy.
-- [ ] The snb Funnel API is publicly healthy and the published Pages origin
+- [x] The snb Funnel API is publicly healthy and the published Pages origin
   passes state, SSE, CORS, YouTube playback, and live-volume verification.
