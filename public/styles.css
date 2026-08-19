@@ -188,20 +188,35 @@ body.boost-active .volume-track span {
 .automatic-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 
 .preview {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
   margin-top: 42px;
   padding-top: 22px;
   border-top: 1px solid #eceeea;
 }
+.preview__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
 .preview strong, .preview span { display: block; }
 .preview strong { margin-bottom: 4px; font-size: 14px; }
 .preview span { max-width: 300px; overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
-.preview__actions { display: flex; gap: 8px; flex: 0 0 auto; }
-.file-button { position: relative; }
-.file-button input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.youtube-frame {
+  width: 100%;
+  min-width: 200px;
+  min-height: 200px;
+  margin-top: 16px;
+  aspect-ratio: 16 / 9;
+  background: #171917;
+}
+#youtube-player, #youtube-player iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 200px;
+  min-height: 200px;
+  border: 0;
+}
 
 .source-card { padding: 24px; }
 .source-card__title { min-height: 38px; display: flex; justify-content: space-between; align-items: flex-start; }
@@ -244,9 +259,7 @@ footer { margin-top: 32px; color: #969c95; font-size: 11px; text-align: center; 
   .setup { padding: 12px; }
   .setup__panel { padding: 26px 22px; }
   .header p { display: none; }
-  .preview { align-items: flex-start; flex-direction: column; }
-  .preview__actions { width: 100%; }
-  .preview__actions .button { flex: 1; }
+  .preview__header { align-items: flex-start; }
   .volume-card h2 { font-size: 64px; }
 }
 

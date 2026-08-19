@@ -114,3 +114,41 @@
   global caps protect the Mac, but one source can still occupy all 200 SSE
   slots. Tailscale PROXY protocol or an external edge/WAF is required for
   enforceable per-source limits; neither is enabled in the closed deployment.
+
+## 2026-08-19
+
+- Replaced the generated tone and local-file chooser with a responsive visible
+  YouTube IFrame API player. Initial fetches, SSE updates, fallback fetches, and
+  mode changes continue through the existing `audio.setVolume(volume)` point,
+  which now calls `YT.Player.setVolume()`.
+- Added visibility-gated playback, looped inline playback, pause/resume,
+  `onAutoplayBlocked` fallback, bounded API/frame load errors, and simple
+  messages for YouTube errors `100`, `101/150`, and `153`.
+- Limited CSP to the exact YouTube API script and privacy-enhanced frame origins
+  and changed Referrer Policy to YouTube's required
+  `strict-origin-when-cross-origin`. The player stays at least `200px` wide and
+  high and is not clipped or covered by custom UI.
+- `npm run verify` passes 44 tests, syntax/build checks, and the mock `86 -> 87`
+  smoke flow. A real Chromium run proved the player engine autoplays and reports
+  `재생 중` with YouTube's official embeddable sample video.
+- The requested video `Oeda7KVkFog` returns YouTube error `150` in both standard
+  and privacy-enhanced embeds. Its normal watch page still works, but browser
+  same-origin rules prevent controlling that page's volume. The feature is not
+  publishable until an embeddable replacement is supplied or the owner enables
+  embedding.
+- A final Chromium pass reproduced error `150`, then verified that
+  `설정 변경 -> 계속` creates a fresh player and reports the same error instead
+  of becoming stuck. Player generations and bounded loader cleanup isolate late
+  callbacks and make both YouTube API loading stages retryable.
+- Replaced the blocked video with the user-provided `XsStb0xbF9Q`. A real
+  Chromium run confirmed embedded playback and an uninterrupted mock oracle
+  update from volume `86` to `87`.
+- Pre-publication checks found the existing Pages document cached for up to ten
+  minutes, so CSS and JavaScript URLs now carry a release version. The Pages
+  workflow now verifies pull requests and deploys only a `main` push, matching
+  the repository's required `verify` check and main-only deployment policy.
+- The existing Pages site is healthy but still serves the prior release. The
+  configured snb Funnel API is currently unreachable, and the snb Mac answers
+  Tailscale ping while refusing LAN SSH and timing out tailnet SSH. Publication
+  remains gated on restoring remote access, verifying the service, and bringing
+  Funnel online before the new frontend reaches `main`.

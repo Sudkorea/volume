@@ -16,9 +16,9 @@ confirmed missing.
 3. Confirm deletion only after repeated observations find both guard posts but
    not the target; freeze the last good value and send one deduplicated Discord
    webhook alert.
-4. Provide a browser UI with an initial title-bait boost choice, browser audio
-   activation, a local audio-file option, live source/view/volume status, and
-   automatic SSE reconnection.
+4. Provide a browser UI with an initial title-bait boost choice, visible
+   YouTube playback whose volume follows the selected post, live
+   source/view/volume status, and automatic SSE reconnection.
 5. Verify parsers, page-boundary transitions, deletion alerts, persistence,
    SSE updates, and the primary browser flow. Prepare the service for the
    `snb-macbook-pro` host without exposing secrets.
@@ -68,3 +68,29 @@ confirmed missing.
 6. Update the supported Node runtime, dependency lock, GitHub security
    settings, and repository commit email; verify locally and remotely before
    requesting Funnel approval.
+
+## YouTube playback — 2026-08-19
+
+1. Replace the generated tone and local-file input with one visible YouTube
+   IFrame API player for video `XsStb0xbF9Q`.
+2. Apply every initial, SSE, and fallback volume snapshot through
+   `YT.Player.setVolume(0..100)` and keep pause/resume controls outside the
+   player.
+3. Start playback only after the dashboard and more than half of the player are
+   visible. Handle blocked autoplay with a direct user-gesture fallback.
+4. Allow only the exact YouTube script and privacy-enhanced frame origins in
+   CSP, preserve a valid Referer, and verify the integration in a real browser.
+5. Verify the selected video from a real browser before publication. The
+   replacement `XsStb0xbF9Q` permits embedded playback.
+
+## Public release — 2026-08-19
+
+1. Bring the snb launchd service and Tailscale Funnel online before changing
+   the public frontend, then verify health, state, SSE, and exact Pages CORS
+   from outside the tailnet.
+2. Version the static CSS and JavaScript URLs so the GitHub Pages 10-minute
+   cache cannot mix the old WebAudio document with the new YouTube runtime.
+3. Run `verify` for pull requests, restrict the Pages deploy job to a push on
+   `main`, and merge only after the required check succeeds.
+4. Wait for the main Pages deployment and run the full published browser flow
+   from `https://sudkorea.github.io/volume/`.

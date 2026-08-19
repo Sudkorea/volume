@@ -17,9 +17,11 @@ try {
   const html = await page.text();
   const hasSetup = html.includes('id="boost-choice"') && html.includes('id="delegate-button"');
   const hasDashboard = html.includes('id="volume-number"') && html.includes('id="view-count"');
-  const hasProjectAssets = html.includes('href="./styles.css"') && html.includes('src="./app.js"');
+  const hasProjectAssets = html.includes('href="./styles.css?v=20260819-youtube1"')
+    && html.includes('src="./app.js?v=20260819-youtube1"');
   const hasPublicApi = html.includes("https://snb-macbook-pro.tail643f01.ts.net");
-  if (!page.ok || !hasSetup || !hasDashboard || !hasProjectAssets || !hasPublicApi) {
+  const hasYouTubePlayer = html.includes('id="youtube-player"') && html.includes('id="audio-toggle"');
+  if (!page.ok || !hasSetup || !hasDashboard || !hasProjectAssets || !hasPublicApi || !hasYouTubePlayer) {
     throw new Error("UI did not render with Pages configuration");
   }
 

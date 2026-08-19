@@ -3,14 +3,14 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self'; connect-src 'self' https://snb-macbook-pro.tail643f01.ts.net; img-src 'self' data:; media-src 'self' blob:; font-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
-    <meta name="referrer" content="no-referrer">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' https://www.youtube.com; style-src 'self'; connect-src 'self' https://snb-macbook-pro.tail643f01.ts.net; img-src 'self' data:; media-src 'self' blob:; font-src 'self'; frame-src https://www.youtube-nocookie.com; object-src 'none'; base-uri 'none'; form-action 'none'">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
     <meta name="theme-color" content="#f3f4f1">
     <meta name="description" content="게시글 조회수에 맞춰 자동으로 바뀌는 볼륨 조절기">
     <meta name="volume-api-base" content="https://snb-macbook-pro.tail643f01.ts.net">
     <title>볼륨</title>
     <link rel="icon" href="data:,">
-    <link rel="stylesheet" href="./styles.css">
+    <link rel="stylesheet" href="./styles.css?v=20260819-youtube1">
   </head>
   <body>
     <section class="setup" id="entry" aria-labelledby="entry-title">
@@ -66,16 +66,15 @@
           <p class="automatic-note">게시글 조회수에 따라 자동으로 바뀝니다.</p>
 
           <div class="preview">
-            <div>
-              <strong>테스트 소리</strong>
-              <span id="audio-caption">기본 테스트 소리</span>
+            <div class="preview__header">
+              <div>
+                <strong>재생</strong>
+                <span id="audio-caption">영상 준비 중</span>
+              </div>
+              <button class="button button--secondary" id="audio-toggle" type="button" aria-pressed="false">재생</button>
             </div>
-            <div class="preview__actions">
-              <button class="button button--secondary" id="audio-toggle" type="button" aria-pressed="true">일시정지</button>
-              <label class="button button--secondary file-button">
-                파일 선택
-                <input id="audio-file" type="file" accept="audio/*">
-              </label>
+            <div class="youtube-frame" id="youtube-frame">
+              <div id="youtube-player"></div>
             </div>
           </div>
         </article>
@@ -131,6 +130,6 @@
       </footer>
     </main>
 
-    <script type="module" src="./app.js"></script>
+    <script type="module" src="./app.js?v=20260819-youtube1"></script>
   </body>
 </html>
